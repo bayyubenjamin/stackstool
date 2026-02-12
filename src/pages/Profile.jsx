@@ -21,15 +21,17 @@ const Profile = ({ userData, userXP, hasCheckedIn, handleCheckIn }) => {
       <div className="text-center space-y-4">
         <div className="w-24 h-24 mx-auto bg-gradient-to-b from-slate-700 to-slate-900 rounded-full p-1 border-2 border-stx-accent">
            <img 
-             src={`https://api.dicebear.com/7.x/identicon/svg?seed=${userData.profile.stxAddress.testnet}`} 
+             // UPDATE: Menggunakan Mainnet Address untuk seed avatar
+             src={`https://api.dicebear.com/7.x/identicon/svg?seed=${userData.profile.stxAddress.mainnet}`} 
              alt="avatar" 
              className="w-full h-full rounded-full bg-slate-800"
            />
         </div>
         <div>
            <h2 className="text-2xl font-bold text-white">Hunter</h2>
+           {/* UPDATE: Menampilkan Mainnet Address */}
            <p className="text-slate-400 font-mono text-sm bg-slate-900 inline-block px-3 py-1 rounded-full mt-2">
-             {userData.profile.stxAddress.testnet}
+             {userData.profile.stxAddress.mainnet}
            </p>
         </div>
       </div>
