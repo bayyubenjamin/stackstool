@@ -1,0 +1,15 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  @apply bg-stx-dark text-white antialiased;
+}
+
+.btn-primary {
+  @apply bg-stx-accent hover:bg-opacity-90 text-white font-bold py-3 px-6 rounded transition-all duration-200 uppercase tracking-wider;
+}
+
+.glass-panel {
+  @apply bg-stx-card border border-slate-700 rounded-xl shadow-xl backdrop-blur-sm;
+}
