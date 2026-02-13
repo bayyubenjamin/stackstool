@@ -1,8 +1,8 @@
-// File: src/App.jsx
 import React, { useState, useEffect } from 'react';
-import { connect, disconnect, isConnected, getLocalStorage } from '@stacks/connect';
-import { StacksMainnet } from '@stacks/network';
-import { uint, stringAscii } from '@stacks/transactions'; // Penting buat Web3
+// UPDATE: Menambahkan openContractCall dan menghapus StacksMainnet yang bermasalah
+import { connect, disconnect, isConnected, getLocalStorage, openContractCall } from '@stacks/connect';
+// HAPUS BARIS INI KARENA BIKIN ERROR BUILD: import { StacksMainnet } from '@stacks/network';
+import { uint, stringAscii } from '@stacks/transactions'; 
 import { supabase } from './supabaseClient';
 import Layout from './components/Layout';
 import Home from './pages/Home';
@@ -52,7 +52,7 @@ function App() {
     }
   }, []);
 
-  // --- SUPABASE SYNC (Untuk UI Cepat) ---
+  // --- SUPABASE SYNC ---
   const fetchUserProfile = async (walletAddress) => {
     setLoading(true);
     let { data: user, error } = await supabase
@@ -114,23 +114,21 @@ function App() {
     setUserData(null);
   };
 
-  // --- WEB3 INTERACTIONS (SMART CONTRACT CALLS) ---
+  // --- WEB3 INTERACTIONS (FIXED: Menggunakan openContractCall tanpa StacksMainnet import) ---
 
-  // 1. Daily Check-in (Call genesis-core)
+  // 1. Daily Check-in
   const handleCheckIn = async () => {
     if (hasCheckedIn || !userData) return;
 
-    await window.StacksProvider?.request('stx_callContract', {
-      network: new StacksMainnet(),
+    await openContractCall({
       contractAddress: CONTRACT_ADDRESS,
       contractName: CONTRACT_CORE,
       functionName: 'daily-check-in',
-      functionArgs: [], // Tidak butuh argumen
-      postConditions: [],
+      functionArgs: [], 
+      // network: dihapus (default ke Mainnet)
       onFinish: (data) => {
         console.log("Check-in Tx:", data.txId);
         
-        // Optimistic Update (Biar UI langsung berubah tanpa nunggu mining 10 menit)
         const newXP = userXP + 20;
         const newLevel = calculateLevel(newXP);
         setUserXP(newXP);
@@ -142,26 +140,23 @@ function App() {
     });
   };
 
-  // 2. Complete Task (Call genesis-core)
+  // 2. Complete Task
   const handleTask = async (taskId) => {
     if (!userData) return;
     const task = allTasks.find(t => t.id === taskId);
     if (!task || completedTaskIds.includes(taskId)) return;
 
-    await window.StacksProvider?.request('stx_callContract', {
-      network: new StacksMainnet(),
+    await openContractCall({
       contractAddress: CONTRACT_ADDRESS,
       contractName: CONTRACT_CORE,
       functionName: 'complete-mission',
       functionArgs: [
-        uint(task.id),     // Kirim ID sebagai uint
-        uint(task.reward)  // Kirim reward sebagai uint
+        uint(task.id),
+        uint(task.reward)
       ],
-      postConditions: [],
       onFinish: (data) => {
         console.log("Mission Tx:", data.txId);
         
-        // Optimistic Update
         const newXP = userXP + task.reward;
         const newLevel = calculateLevel(newXP);
         const newCompleted = [...completedTaskIds, taskId];
@@ -174,24 +169,20 @@ function App() {
     });
   };
 
-  // 3. Mint Badge (Call genesis-core)
+  // 3. Mint Badge
   const handleMint = async (badgeId) => {
     if (!userData) return alert("Connect Wallet Required");
 
-    // badgeId = "genesis", "node", atau "guardian"
-    await window.StacksProvider?.request('stx_callContract', {
-      network: new StacksMainnet(),
+    await openContractCall({
       contractAddress: CONTRACT_ADDRESS,
       contractName: CONTRACT_CORE,
       functionName: 'claim-badge',
       functionArgs: [
-        stringAscii(badgeId) // Kirim nama badge sebagai string-ascii
+        stringAscii(badgeId)
       ],
-      postConditions: [],
       onFinish: (data) => {
         console.log("Mint Tx:", data.txId);
         
-        // Optimistic Update
         const newBadges = { ...badgesStatus, [badgeId]: true };
         setBadgesStatus(newBadges);
         updateDatabase({ badges: newBadges });
