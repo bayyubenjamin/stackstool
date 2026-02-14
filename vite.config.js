@@ -6,10 +6,12 @@ export default defineConfig({
   plugins: [react()],
   resolve: {
     alias: {
-      buffer: 'buffer', // Mengarahkan import 'buffer' ke modul yang benar
+      // Mengarahkan import 'buffer' ke library buffer yang sudah diinstall
+      buffer: 'buffer',
     },
   },
   define: {
-    'global': 'globalThis', // Gunakan globalThis untuk kompatibilitas terbaik
+    // Definisi global untuk library legacy
+    'global': 'window',
   },
 })

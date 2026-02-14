@@ -1,8 +1,6 @@
 import { Buffer } from 'buffer';
 
-// Polyfill standar untuk Stacks.js di browser
-if (typeof window !== 'undefined') {
-  window.Buffer = Buffer;
-  window.global = window;
-  window.process = { env: {} }; // Beberapa lib butuh process.env
-}
+// Wajib untuk Stacks.js di Vite
+window.global = window;
+window.Buffer = Buffer;
+window.process = { env: { NODE_ENV: 'development' } };

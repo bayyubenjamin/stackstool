@@ -6,7 +6,7 @@ import Home from './pages/Home';
 import Tasks from './pages/Tasks';
 import Profile from './pages/Profile';
 
-// 1. Konfigurasi Standar Stacks
+// Konfigurasi Stacks Session (Standar)
 const appConfig = new AppConfig(['store_write', 'publish_data']);
 const userSession = new UserSession({ appConfig });
 
@@ -21,7 +21,7 @@ function App() {
   const [hasCheckedIn, setHasCheckedIn] = useState(false);
   const [badgesStatus, setBadgesStatus] = useState({ genesis: false, node: false, guardian: false });
 
-  // Cek login saat load
+  // Cek login saat aplikasi dimuat
   useEffect(() => {
     if (userSession.isUserSignedIn()) {
       const user = userSession.loadUserData();
@@ -35,7 +35,7 @@ function App() {
     }
   }, []);
 
-  // 2. Fungsi Connect Wallet Standar
+  // Fungsi Login Standar
   const connectWallet = () => {
     showConnect({
       appDetails: {
@@ -75,10 +75,9 @@ function App() {
     setLoading(false);
   };
 
-  const handleCheckIn = async () => {
-    if (hasCheckedIn || !userData) return;
-    // Logika checkin sementara
-    alert("Check-in triggered (Transaction logic here)");
+  const handleCheckIn = () => {
+    if (!userData) return;
+    alert("Fitur Check-in akan segera aktif!");
   };
 
   return (
@@ -102,7 +101,9 @@ function App() {
       }
     >
       {loading ? (
-        <div className="p-10 text-center animate-pulse text-slate-400">Loading profile...</div>
+        <div className="flex items-center justify-center h-64">
+          <p className="text-slate-400 animate-pulse">Memuat profil...</p>
+        </div>
       ) : (
         <>
           {activeTab === 'home' && <Home userData={userData} userXP={userXP} userLevel={userLevel} badgesStatus={badgesStatus} connectWallet={connectWallet} hasCheckedIn={hasCheckedIn} />}
