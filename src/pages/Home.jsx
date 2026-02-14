@@ -1,4 +1,3 @@
-// File: src/pages/Home.jsx
 import React from 'react';
 
 // Komponen Kartu Badge (Internal)
@@ -79,7 +78,7 @@ const BadgeCard = ({
   );
 };
 
-const Home = ({ userData, userXP, userLevel, badgesStatus, handleMint, connectWallet }) => {
+const Home = ({ userData, userXP, userLevel, badgesStatus, handleMint, connectWallet, hasCheckedIn }) => {
   
   // Definisi Badge Logic
   const badges = [
@@ -91,7 +90,7 @@ const Home = ({ userData, userXP, userLevel, badgesStatus, handleMint, connectWa
       icon: "💠",
       colorClass: "stx-accent", // Biru (class custom di tailwind config) atau ganti 'blue-500'
       isLocked: !userData || userXP < 100,
-      isMinted: badgesStatus.genesis
+      isMinted: badgesStatus?.genesis // Pakai optional chaining biar aman
     },
     {
       id: 'node',
@@ -101,7 +100,7 @@ const Home = ({ userData, userXP, userLevel, badgesStatus, handleMint, connectWa
       icon: "⚡",
       colorClass: "purple-500",
       isLocked: !userData || userLevel < 5,
-      isMinted: badgesStatus.node
+      isMinted: badgesStatus?.node
     },
     {
       id: 'guardian',
@@ -111,7 +110,7 @@ const Home = ({ userData, userXP, userLevel, badgesStatus, handleMint, connectWa
       icon: "🛡️",
       colorClass: "amber-500", // Emas/Kuning
       isLocked: !userData || userLevel < 10,
-      isMinted: badgesStatus.guardian
+      isMinted: badgesStatus?.guardian
     }
   ];
 
@@ -179,7 +178,7 @@ const Home = ({ userData, userXP, userLevel, badgesStatus, handleMint, connectWa
       {/* Footer Info */}
       <div className="text-center border-t border-slate-800 pt-8 mt-8">
         <p className="text-slate-600 text-xs font-mono">
-          GENESIS CONTRACT: <span className="text-slate-500 hover:text-stx-accent cursor-pointer transition">SP2X...9F2A</span>
+          GENESIS CONTRACT: <span className="text-slate-500 hover:text-stx-accent cursor-pointer transition">SP3G...9J3</span>
         </p>
       </div>
 
