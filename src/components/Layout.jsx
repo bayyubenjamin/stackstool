@@ -1,6 +1,6 @@
 import React from 'react';
 
-const Layout = ({ children, activeTab, setActiveTab, walletButton }) => {
+const Layout = ({ children, activeTab, setActiveTab, walletButton, txStatus }) => {
   const menuItems = [
     { id: 'home', label: 'Overview', icon: '📊' },
     { id: 'tasks', label: 'Protocol', icon: '💠' },
@@ -8,8 +8,59 @@ const Layout = ({ children, activeTab, setActiveTab, walletButton }) => {
   ];
 
   return (
-    <div className="min-h-screen flex bg-[#0B1120] text-slate-200 font-sans overflow-hidden">
+    <div className="min-h-screen flex bg-[#0B1120] text-slate-200 font-sans overflow-hidden relative">
       
+      {/* --- TRANSACTION STATUS NOTIFICATION (TOAST) --- */}
+      {txStatus && txStatus.type !== 'idle' && (
+        <div className={`fixed bottom-20 md:bottom-10 right-4 md:right-10 z-[60] max-w-sm w-full animate-fade-in-up transition-all duration-300 transform`}>
+          <div className={`p-4 rounded-xl border backdrop-blur-md shadow-2xl flex items-start gap-4 ${
+            txStatus.type === 'success' 
+              ? 'bg-slate-900/95 border-green-500/30 text-white' 
+              : txStatus.type === 'failed'
+                ? 'bg-slate-900/95 border-red-500/30 text-white'
+                : 'bg-slate-900/95 border-stx-accent/30 text-white'
+          }`}>
+            
+            {/* Icon Status */}
+            <div className={`mt-1 w-8 h-8 rounded-full flex items-center justify-center text-lg shrink-0 ${
+              txStatus.type === 'success' ? 'bg-green-500/20 text-green-400' :
+              txStatus.type === 'failed' ? 'bg-red-500/20 text-red-400' :
+              'bg-stx-accent/20 text-stx-accent animate-spin'
+            }`}>
+              {txStatus.type === 'success' ? '✓' : txStatus.type === 'failed' ? '✕' : '⟳'}
+            </div>
+
+            {/* Text Info */}
+            <div className="flex-1">
+              <p className={`font-bold text-sm uppercase tracking-wide mb-1 ${
+                txStatus.type === 'success' ? 'text-green-400' :
+                txStatus.type === 'failed' ? 'text-red-400' :
+                'text-stx-accent'
+              }`}>
+                {txStatus.type === 'success' ? 'Transaction Sent' :
+                 txStatus.type === 'failed' ? 'Transaction Failed' :
+                 'Processing'}
+              </p>
+              <p className="text-slate-400 text-xs leading-relaxed">
+                {txStatus.message}
+              </p>
+              
+              {/* Link Explorer (Hanya jika ada TX ID) */}
+              {txStatus.txId && (
+                <a 
+                  href={`https://explorer.hiro.so/txid/${txStatus.txId}?chain=mainnet`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-block mt-2 text-[10px] font-mono text-stx-accent hover:text-white border-b border-stx-accent/30 hover:border-white transition-all pb-0.5"
+                >
+                  VIEW ON EXPLORER ↗
+                </a>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Sidebar Desktop */}
       <aside className="w-64 hidden md:flex flex-col border-r border-slate-800 bg-[#0F172A]/95 backdrop-blur-xl z-20">
         <div className="p-6 flex items-center gap-3">

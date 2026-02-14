@@ -19,12 +19,19 @@ function App() {
   // State Database
   const [userXP, setUserXP] = useState(0);
   const [userLevel, setUserLevel] = useState(1);
-  const [hasCheckedIn, setHasCheckedIn] = useState(false); // State kunci untuk disable tombol
+  const [hasCheckedIn, setHasCheckedIn] = useState(false); 
   const [completedTaskIds, setCompletedTaskIds] = useState([]);
   const [badgesStatus, setBadgesStatus] = useState({
     genesis: false,
     node: false,
     guardian: false
+  });
+
+  // State Transaksi (Baru)
+  const [txStatus, setTxStatus] = useState({
+    type: 'idle', // idle, pending, success, failed
+    message: '',
+    txId: null
   });
 
   const allTasks = [
@@ -50,6 +57,18 @@ function App() {
     }
   }, []);
 
+  // --- HELPER STATUS TRANSAKSI ---
+  const handleTxStatus = (type, message, txId = null) => {
+    setTxStatus({ type, message, txId });
+    
+    // Auto reset status setelah 5 detik jika sukses/gagal
+    if (type === 'success' || type === 'failed') {
+      setTimeout(() => {
+        setTxStatus({ type: 'idle', message: '', txId: null });
+      }, 5000);
+    }
+  };
+
   // --- LOGIKA DATABASE & SINKRONISASI ---
   const fetchUserProfile = async (walletAddress) => {
     setLoading(true);
@@ -59,7 +78,6 @@ function App() {
       .eq('wallet_address', walletAddress)
       .single();
 
-    // Jika user baru, buat data default
     if (error && error.code === 'PGRST116') {
       const { data: newUser } = await supabase
         .from('users')
@@ -75,14 +93,10 @@ function App() {
       setUserXP(user.xp || 0);
       setUserLevel(user.level || 1);
       setCompletedTaskIds(user.completed_tasks || []);
-      
-      // FIX 1: Pastikan badge dibaca sebagai Object, bukan string
       const badges = typeof user.badges === 'string' ? JSON.parse(user.badges) : user.badges;
       setBadgesStatus(badges || { genesis: false, node: false, guardian: false });
       
-      // FIX 2: Cek Tanggal untuk Validasi Daily Check-in
       if (user.last_checkin) {
-        // Bandingkan tanggal terakhir check-in dengan hari ini (lokal user)
         const lastDate = new Date(user.last_checkin).toDateString();
         const todayDate = new Date().toDateString();
         setHasCheckedIn(lastDate === todayDate);
@@ -96,10 +110,7 @@ function App() {
   const updateDatabase = async (updates) => {
     if (!userData) return;
     const address = userData.profile.stxAddress.mainnet;
-    
-    // Debugging di console
     console.log("Saving to DB:", updates);
-
     await supabase.from('users').update(updates).eq('wallet_address', address);
   };
 
@@ -129,9 +140,11 @@ function App() {
 
   // 1. Daily Check-in
   const handleCheckIn = async () => {
-    // BLOCK DI FRONTEND: Kalau sudah check-in, hentikan fungsi!
     if (hasCheckedIn) return alert("You have already checked in today! Come back tomorrow.");
     if (!userData) return;
+
+    // Set pending status
+    handleTxStatus('pending', 'Preparing Check-in...');
 
     await openContractCall({
       contractAddress: CONTRACT_ADDRESS,
@@ -141,22 +154,24 @@ function App() {
       onFinish: (data) => {
         console.log("Check-in Tx:", data.txId);
         
-        // Optimistic UI: Langsung update tampilan seolah sukses
         const newXP = userXP + 20;
         const newLevel = calculateLevel(newXP);
         setUserXP(newXP);
         setUserLevel(newLevel);
-        setHasCheckedIn(true); // Langsung kunci tombol
+        setHasCheckedIn(true);
         
-        // Simpan ke database
         updateDatabase({ 
           xp: newXP, 
           level: newLevel, 
-          last_checkin: new Date().toISOString() // Simpan timestamp sekarang
+          last_checkin: new Date().toISOString()
         });
         
-        alert("Check-in Broadcasted! +20 XP");
+        // Update status sukses dengan TX ID
+        handleTxStatus('success', 'Check-in Broadcasted! +20 XP', data.txId);
       },
+      onCancel: () => {
+        handleTxStatus('failed', 'Transaction Cancelled by User');
+      }
     });
   };
 
@@ -165,6 +180,8 @@ function App() {
     if (!userData) return;
     const task = allTasks.find(t => t.id === taskId);
     if (!task || completedTaskIds.includes(taskId)) return;
+
+    handleTxStatus('pending', `Submitting ${task.name}...`);
 
     await openContractCall({
       contractAddress: CONTRACT_ADDRESS,
@@ -181,7 +198,11 @@ function App() {
         setCompletedTaskIds(newCompleted);
         
         updateDatabase({ xp: newXP, level: newLevel, completed_tasks: newCompleted });
-        alert(`Mission Submitted! +${task.reward} XP`);
+        
+        handleTxStatus('success', `Mission Submitted! +${task.reward} XP`, data.txId);
+      },
+      onCancel: () => {
+        handleTxStatus('failed', 'Mission Submission Cancelled');
       }
     });
   };
@@ -189,9 +210,9 @@ function App() {
   // 3. Mint Badge
   const handleMint = async (badgeId) => {
     if (!userData) return alert("Connect Wallet Required");
-    
-    // BLOCK DI FRONTEND: Kalau sudah punya, jangan mint lagi
     if (badgesStatus[badgeId]) return alert("You already own this badge!");
+
+    handleTxStatus('pending', `Minting ${badgeId.toUpperCase()} Badge...`);
 
     await openContractCall({
       contractAddress: CONTRACT_ADDRESS,
@@ -201,12 +222,15 @@ function App() {
       onFinish: (data) => {
         console.log("Mint Tx:", data.txId);
         
-        // Optimistic UI: Tandai badge sebagai 'true' (Owned)
         const newBadges = { ...badgesStatus, [badgeId]: true };
         setBadgesStatus(newBadges);
         
-        updateDatabase({ badges: newBadges }); // Simpan JSON object
-        alert(`${badgeId.toUpperCase()} Badge Minting...`);
+        updateDatabase({ badges: newBadges });
+        
+        handleTxStatus('success', `${badgeId.toUpperCase()} Badge Minted!`, data.txId);
+      },
+      onCancel: () => {
+        handleTxStatus('failed', 'Minting Cancelled');
       }
     });
   };
@@ -217,7 +241,6 @@ function App() {
 
     switch (activeTab) {
       case 'home':
-        // Pass 'hasCheckedIn' ke Home biar tombolnya bisa didisable
         return <Home 
           userData={userData} 
           userXP={userXP} 
@@ -246,7 +269,8 @@ function App() {
   );
 
   return (
-    <Layout activeTab={activeTab} setActiveTab={setActiveTab} walletButton={WalletButton}>
+    // Pass txStatus ke Layout
+    <Layout activeTab={activeTab} setActiveTab={setActiveTab} walletButton={WalletButton} txStatus={txStatus}>
       {renderContent()}
     </Layout>
   );
