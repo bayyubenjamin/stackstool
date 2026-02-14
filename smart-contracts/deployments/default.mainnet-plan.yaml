@@ -9,10 +9,10 @@ plan:
     - id: 0
       transactions:
         - contract-publish:
-            contract-name: genesis-core
+            contract-name: genesis-core-v2
             expected-sender: SP3GHKMV4GSYNA8WGBX83DACG80K1RRVQZAZMB9J3
-            cost: 36730
-            path: contracts/genesis-core.clar
+            cost: 36710
+            path: contracts/genesis-core-v2.clar
             anchor-block-only: true
             clarity-version: 2
       epoch: "2.5"

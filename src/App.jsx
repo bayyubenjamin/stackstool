@@ -10,7 +10,7 @@ import Profile from './pages/Profile';
 
 // --- KONFIGURASI KONTRAK ---
 const CONTRACT_ADDRESS = 'SP3GHKMV4GSYNA8WGBX83DACG80K1RRVQZAZMB9J3';
-const CONTRACT_CORE = 'genesis-core';
+const CONTRACT_CORE = 'genesis-core-v2';
 
 function App() {
   const [userData, setUserData] = useState(null);

@@ -6,8 +6,8 @@ telemetry = true
 cache_dir = "./.cache"
 requirements = []
 
-[contracts.genesis-core]
-path = "contracts/genesis-core.clar"
+[contracts.genesis-core-v2]
+path = "contracts/genesis-core-v2.clar"
 clarity_version = 2
 epoch = 2.5
 
