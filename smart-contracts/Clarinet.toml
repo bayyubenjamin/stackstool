@@ -1,21 +1,23 @@
 [project]
 name = "smart-contracts"
-description = "Genesis Platform Contracts"
+description = "Genesis Platform V4"
 authors = []
 telemetry = true
 cache_dir = "./.cache"
 requirements = []
 
-[contracts.genesis-core-v2]
-path = "contracts/genesis-core-v2.clar"
+# Deploy V4 Contracts
+[contracts.genesis-missions-v4]
+path = "contracts/genesis-missions-v4.clar"
 clarity_version = 2
 epoch = 2.5
 
-[repl.analysis]
-passes = ["check_checker"]
+[contracts.genesis-badges-v4]
+path = "contracts/genesis-badges-v4.clar"
+clarity_version = 2
+epoch = 2.5
 
-[repl.analysis.check_checker]
-strict = false
-trusted_sender = false
-trusted_caller = false
-callee_filter = false
+[contracts.genesis-core-v4]
+path = "contracts/genesis-core-v4.clar"
+clarity_version = 2
+epoch = 2.5

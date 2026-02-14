@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { connect, disconnect, isConnected, getLocalStorage, openContractCall } from '@stacks/connect';
-// FIX 1: Ganti import 'uint' -> 'uintCV', 'stringAscii' -> 'stringAsciiCV'
 import { uintCV, stringAsciiCV } from '@stacks/transactions'; 
 import { supabase } from './supabaseClient';
 import Layout from './components/Layout';
@@ -8,19 +7,19 @@ import Home from './pages/Home';
 import Tasks from './pages/Tasks';
 import Profile from './pages/Profile';
 
-// --- KONFIGURASI KONTRAK ---
+// --- KONFIGURASI KONTRAK (VERSI 2) ---
 const CONTRACT_ADDRESS = 'SP3GHKMV4GSYNA8WGBX83DACG80K1RRVQZAZMB9J3';
-const CONTRACT_CORE = 'genesis-core-v2';
+const CONTRACT_CORE = 'genesis-core-v4';
 
 function App() {
   const [userData, setUserData] = useState(null);
   const [activeTab, setActiveTab] = useState('home');
   const [loading, setLoading] = useState(false);
 
-  // State Database (Tampilan Frontend)
+  // State Database
   const [userXP, setUserXP] = useState(0);
   const [userLevel, setUserLevel] = useState(1);
-  const [hasCheckedIn, setHasCheckedIn] = useState(false);
+  const [hasCheckedIn, setHasCheckedIn] = useState(false); // State kunci untuk disable tombol
   const [completedTaskIds, setCompletedTaskIds] = useState([]);
   const [badgesStatus, setBadgesStatus] = useState({
     genesis: false,
@@ -51,7 +50,7 @@ function App() {
     }
   }, []);
 
-  // --- SUPABASE SYNC ---
+  // --- LOGIKA DATABASE & SINKRONISASI ---
   const fetchUserProfile = async (walletAddress) => {
     setLoading(true);
     let { data: user, error } = await supabase
@@ -60,6 +59,7 @@ function App() {
       .eq('wallet_address', walletAddress)
       .single();
 
+    // Jika user baru, buat data default
     if (error && error.code === 'PGRST116') {
       const { data: newUser } = await supabase
         .from('users')
@@ -75,11 +75,19 @@ function App() {
       setUserXP(user.xp || 0);
       setUserLevel(user.level || 1);
       setCompletedTaskIds(user.completed_tasks || []);
-      setBadgesStatus(user.badges || { genesis: false, node: false, guardian: false });
       
+      // FIX 1: Pastikan badge dibaca sebagai Object, bukan string
+      const badges = typeof user.badges === 'string' ? JSON.parse(user.badges) : user.badges;
+      setBadgesStatus(badges || { genesis: false, node: false, guardian: false });
+      
+      // FIX 2: Cek Tanggal untuk Validasi Daily Check-in
       if (user.last_checkin) {
+        // Bandingkan tanggal terakhir check-in dengan hari ini (lokal user)
         const lastDate = new Date(user.last_checkin).toDateString();
-        setHasCheckedIn(lastDate === new Date().toDateString());
+        const todayDate = new Date().toDateString();
+        setHasCheckedIn(lastDate === todayDate);
+      } else {
+        setHasCheckedIn(false);
       }
     }
     setLoading(false);
@@ -88,6 +96,10 @@ function App() {
   const updateDatabase = async (updates) => {
     if (!userData) return;
     const address = userData.profile.stxAddress.mainnet;
+    
+    // Debugging di console
+    console.log("Saving to DB:", updates);
+
     await supabase.from('users').update(updates).eq('wallet_address', address);
   };
 
@@ -117,7 +129,9 @@ function App() {
 
   // 1. Daily Check-in
   const handleCheckIn = async () => {
-    if (hasCheckedIn || !userData) return;
+    // BLOCK DI FRONTEND: Kalau sudah check-in, hentikan fungsi!
+    if (hasCheckedIn) return alert("You have already checked in today! Come back tomorrow.");
+    if (!userData) return;
 
     await openContractCall({
       contractAddress: CONTRACT_ADDRESS,
@@ -126,13 +140,22 @@ function App() {
       functionArgs: [], 
       onFinish: (data) => {
         console.log("Check-in Tx:", data.txId);
+        
+        // Optimistic UI: Langsung update tampilan seolah sukses
         const newXP = userXP + 20;
         const newLevel = calculateLevel(newXP);
         setUserXP(newXP);
         setUserLevel(newLevel);
-        setHasCheckedIn(true);
-        updateDatabase({ xp: newXP, level: newLevel, last_checkin: new Date().toISOString() });
-        alert("Check-in Transaction Broadcasted! +20 XP (Pending Confirmation)");
+        setHasCheckedIn(true); // Langsung kunci tombol
+        
+        // Simpan ke database
+        updateDatabase({ 
+          xp: newXP, 
+          level: newLevel, 
+          last_checkin: new Date().toISOString() // Simpan timestamp sekarang
+        });
+        
+        alert("Check-in Broadcasted! +20 XP");
       },
     });
   };
@@ -147,21 +170,18 @@ function App() {
       contractAddress: CONTRACT_ADDRESS,
       contractName: CONTRACT_CORE,
       functionName: 'complete-mission',
-      functionArgs: [
-        // FIX 2: Gunakan uintCV() bukan uint()
-        uintCV(task.id),
-        uintCV(task.reward)
-      ],
+      functionArgs: [uintCV(task.id), uintCV(task.reward)],
       onFinish: (data) => {
-        console.log("Mission Tx:", data.txId);
         const newXP = userXP + task.reward;
         const newLevel = calculateLevel(newXP);
         const newCompleted = [...completedTaskIds, taskId];
+        
         setUserXP(newXP);
         setUserLevel(newLevel);
         setCompletedTaskIds(newCompleted);
+        
         updateDatabase({ xp: newXP, level: newLevel, completed_tasks: newCompleted });
-        alert(`Mission Submitted! +${task.reward} XP (Pending Confirmation)`);
+        alert(`Mission Submitted! +${task.reward} XP`);
       }
     });
   };
@@ -169,32 +189,44 @@ function App() {
   // 3. Mint Badge
   const handleMint = async (badgeId) => {
     if (!userData) return alert("Connect Wallet Required");
+    
+    // BLOCK DI FRONTEND: Kalau sudah punya, jangan mint lagi
+    if (badgesStatus[badgeId]) return alert("You already own this badge!");
 
     await openContractCall({
       contractAddress: CONTRACT_ADDRESS,
       contractName: CONTRACT_CORE,
       functionName: 'claim-badge',
-      functionArgs: [
-        // FIX 3: Gunakan stringAsciiCV() bukan stringAscii()
-        stringAsciiCV(badgeId)
-      ],
+      functionArgs: [stringAsciiCV(badgeId)],
       onFinish: (data) => {
         console.log("Mint Tx:", data.txId);
+        
+        // Optimistic UI: Tandai badge sebagai 'true' (Owned)
         const newBadges = { ...badgesStatus, [badgeId]: true };
         setBadgesStatus(newBadges);
-        updateDatabase({ badges: newBadges });
-        alert(`${badgeId.toUpperCase()} Badge Minting... Check your wallet!`);
+        
+        updateDatabase({ badges: newBadges }); // Simpan JSON object
+        alert(`${badgeId.toUpperCase()} Badge Minting...`);
       }
     });
   };
 
   // --- RENDER ---
   const renderContent = () => {
-    if (loading) return <div className="flex h-full items-center justify-center text-stx-accent font-mono animate-pulse">Synchronizing On-Chain Data...</div>;
+    if (loading) return <div className="flex h-full items-center justify-center text-stx-accent font-mono animate-pulse">Syncing User Data...</div>;
 
     switch (activeTab) {
       case 'home':
-        return <Home userData={userData} userXP={userXP} userLevel={userLevel} badgesStatus={badgesStatus} handleMint={handleMint} connectWallet={connectWallet} />;
+        // Pass 'hasCheckedIn' ke Home biar tombolnya bisa didisable
+        return <Home 
+          userData={userData} 
+          userXP={userXP} 
+          userLevel={userLevel} 
+          badgesStatus={badgesStatus} 
+          handleMint={handleMint} 
+          connectWallet={connectWallet}
+          hasCheckedIn={hasCheckedIn} 
+        />;
       case 'tasks':
         return <Tasks tasks={tasksWithStatus} handleTask={handleTask} badgesStatus={badgesStatus} />;
       case 'profile':

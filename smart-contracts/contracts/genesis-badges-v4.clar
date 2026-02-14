@@ -1,0 +1,36 @@
+;; genesis-badges-v3.clar
+(impl-trait 'SP2PABAF9FTAJYNFZH93XENAJ8FVY99RRM50D2JG9.nft-trait.nft-trait)
+
+(define-non-fungible-token genesis-badge uint)
+
+(define-constant err-owner-only (err u100))
+(define-constant err-not-token-owner (err u101))
+(define-constant err-not-authorized (err u102))
+
+(define-data-var last-token-id uint u0)
+(define-data-var game-core-address principal tx-sender)
+
+(define-map token-uri uint (string-ascii 256))
+
+(define-read-only (get-last-token-id) (ok (var-get last-token-id)))
+(define-read-only (get-token-uri (token-id uint)) (ok (map-get? token-uri token-id)))
+(define-read-only (get-owner (token-id uint)) (ok (nft-get-owner? genesis-badge token-id)))
+
+(define-public (transfer (token-id uint) (sender principal) (recipient principal))
+  (begin
+    (asserts! (is-eq tx-sender sender) err-not-token-owner)
+    (nft-transfer? genesis-badge token-id sender recipient)))
+
+(define-public (set-game-core (new-core principal))
+  (begin
+    (asserts! (is-eq tx-sender (var-get game-core-address)) err-owner-only)
+    (var-set game-core-address new-core)
+    (ok true)))
+
+(define-public (mint-badge (recipient principal) (uri (string-ascii 256)))
+  (let ((token-id (+ (var-get last-token-id) u1)))
+    (asserts! (is-eq tx-sender (var-get game-core-address)) err-not-authorized)
+    (try! (nft-mint? genesis-badge token-id recipient))
+    (map-set token-uri token-id uri)
+    (var-set last-token-id token-id)
+    (ok token-id)))
