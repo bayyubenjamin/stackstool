@@ -1,5 +1,4 @@
-// src/main.jsx (Update kode ini)
-import './polyfills'; // <--- WAJIB DI BARIS PERTAMA
+import './polyfills'; // Harus di baris pertama
 
 import React from 'react'
 import ReactDOM from 'react-dom/client'
