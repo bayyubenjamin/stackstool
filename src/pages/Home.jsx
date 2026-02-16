@@ -1,6 +1,6 @@
 import React from 'react';
 
-// Komponen Kartu Badge (Internal)
+// --- KOMPONEN KARTU BADGE (Internal) ---
 const BadgeCard = ({ 
   id, 
   title, 
@@ -78,9 +78,12 @@ const BadgeCard = ({
   );
 };
 
-const Home = ({ userData, userXP, userLevel, badgesStatus, handleMint, connectWallet, hasCheckedIn }) => {
+// --- HALAMAN UTAMA (HOME) ---
+const Home = ({ userData, userXP, userLevel, badgesStatus, handleMint, connectWallet }) => {
   
-  // Definisi Badge Logic
+  // Definisi Badge Logic & Data
+  // isLocked: Mengecek apakah user memenuhi syarat XP/Level
+  // isMinted: Mengecek status dari smart contract (lewat props badgesStatus)
   const badges = [
     {
       id: 'genesis',
@@ -88,9 +91,9 @@ const Home = ({ userData, userXP, userLevel, badgesStatus, handleMint, connectWa
       subtitle: "Phase 1 Access",
       reqText: "Requires 100 Reputation Points. Awarded to early protocol adopters who verify their wallet.",
       icon: "💠",
-      colorClass: "stx-accent", // Biru (class custom di tailwind config) atau ganti 'blue-500'
-      isLocked: !userData || userXP < 100,
-      isMinted: badgesStatus?.genesis // Pakai optional chaining biar aman
+      colorClass: "stx-accent", // Pastikan class ini ada di tailwind atau ganti 'blue-500'
+      isLocked: !userData || userXP < 100, 
+      isMinted: badgesStatus?.genesis || false
     },
     {
       id: 'node',
@@ -100,7 +103,7 @@ const Home = ({ userData, userXP, userLevel, badgesStatus, handleMint, connectWa
       icon: "⚡",
       colorClass: "purple-500",
       isLocked: !userData || userLevel < 5,
-      isMinted: badgesStatus?.node
+      isMinted: badgesStatus?.node || false
     },
     {
       id: 'guardian',
@@ -108,9 +111,9 @@ const Home = ({ userData, userXP, userLevel, badgesStatus, handleMint, connectWa
       subtitle: "Elite Status",
       reqText: "Requires Level 10. The highest honor for users who have completed all genesis missions.",
       icon: "🛡️",
-      colorClass: "amber-500", // Emas/Kuning
+      colorClass: "amber-500",
       isLocked: !userData || userLevel < 10,
-      isMinted: badgesStatus?.guardian
+      isMinted: badgesStatus?.guardian || false
     }
   ];
 
@@ -119,6 +122,7 @@ const Home = ({ userData, userXP, userLevel, badgesStatus, handleMint, connectWa
       
       {/* Metrics Row */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {/* Metric Global */}
         <div className="bg-slate-900/50 border border-slate-800 p-4 rounded-xl backdrop-blur-sm">
           <p className="text-slate-500 text-[10px] font-bold uppercase mb-1">Total Users</p>
           <p className="text-xl font-mono text-white">845</p>
@@ -129,7 +133,8 @@ const Home = ({ userData, userXP, userLevel, badgesStatus, handleMint, connectWa
             <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span> Mainnet
           </p>
         </div>
-         {/* User Personal Stats (Only if connected) */}
+
+         {/* User Personal Stats (Hanya muncul jika sudah connect) */}
          {userData && (
           <>
             <div className="bg-slate-900/50 border border-stx-accent/30 p-4 rounded-xl backdrop-blur-sm relative overflow-hidden">
@@ -157,7 +162,10 @@ const Home = ({ userData, userXP, userLevel, badgesStatus, handleMint, connectWa
         
         {!userData && (
           <div className="mt-8">
-            <button onClick={connectWallet} className="bg-white text-black font-bold py-3 px-8 rounded-full hover:bg-slate-200 transition shadow-xl shadow-white/10 hover:scale-105 transform duration-200">
+            <button 
+              onClick={connectWallet} 
+              className="bg-white text-black font-bold py-3 px-8 rounded-full hover:bg-slate-200 transition shadow-xl shadow-white/10 hover:scale-105 transform duration-200"
+            >
               Initialize Access
             </button>
           </div>
@@ -170,7 +178,7 @@ const Home = ({ userData, userXP, userLevel, badgesStatus, handleMint, connectWa
           <BadgeCard 
             key={badge.id}
             {...badge}
-            onMint={handleMint}
+            onMint={handleMint} // Passing fungsi handleMint ke kartu
           />
         ))}
       </div>
