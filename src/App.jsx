@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { AppConfig, UserSession, showConnect, openContractCall } from '@stacks/connect';
-import { StacksMainnet, StacksTestnet } from '@stacks/network'; // Sesuaikan network
+import { STACKS_MAINNET, STACKS_TESTNET } from '@stacks/network'; // FIX: Gunakan Constant, bukan Class
 import { uintCV, stringAsciiCV, PostConditionMode } from '@stacks/transactions';
 import { supabase } from './supabaseClient';
 import Layout from './components/Layout';
@@ -22,8 +22,8 @@ const userSession = new UserSession({ appConfig });
 const MISSION_LIST = [
   { id: 1, name: "Follow Twitter", desc: "Follow @stacksone to stay updated.", reward: 50, icon: "🐦", completed: false },
   { id: 2, name: "Join Discord", desc: "Join our community server.", reward: 100, icon: "💬", completed: false },
-  { id: 3, name: "First Transaction", desc: "Make your first transaction on Stacks.", reward: 200, icon: "💸", completed: false },
-  { id: 4, name: "Share Profile", desc: "Share your genesis profile.", reward: 30, icon: "🔗", completed: false }
+  { id: 3, name: "First Transaction", desc: "Make your first transaction on Stacks.", reward: 200, icon: "⚡", completed: false },
+  { id: 4, name: "Share Profile", desc: "Share your genesis profile.", reward: 30, icon: "📤", completed: false }
 ];
 
 function App() {
@@ -108,7 +108,7 @@ function App() {
     
     // Panggil fungsi daily-check-in di genesis-core-v4
     await openContractCall({
-      network: new StacksMainnet(), // Gunakan StacksTestnet() jika testing
+      network: STACKS_MAINNET, // FIX: Gunakan constant langsung (tanpa new)
       contractAddress: CONTRACT_ADDRESS,
       contractName: CONTRACT_NAME,
       functionName: 'daily-check-in',
@@ -137,7 +137,7 @@ function App() {
     const contractBadgeName = badgeNameMap[badgeType] || badgeType;
 
     await openContractCall({
-      network: new StacksMainnet(),
+      network: STACKS_MAINNET, // FIX: Gunakan constant langsung
       contractAddress: CONTRACT_ADDRESS,
       contractName: CONTRACT_NAME,
       functionName: 'claim-badge',
@@ -160,7 +160,7 @@ function App() {
     if (!task) return;
 
     await openContractCall({
-      network: new StacksMainnet(),
+      network: STACKS_MAINNET, // FIX: Gunakan constant langsung
       contractAddress: CONTRACT_ADDRESS,
       contractName: CONTRACT_NAME,
       functionName: 'complete-mission',
