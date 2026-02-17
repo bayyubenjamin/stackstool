@@ -73,7 +73,6 @@ function App() {
         }
       } catch (error) {
         console.error("⚠️ Session error:", error);
-        // Auto-clear cache jika corrupt
         if (error.message && error.message.includes('JSON data version')) {
             localStorage.removeItem('blockstack-session');
             window.location.reload();
@@ -159,17 +158,23 @@ function App() {
       'guardian': 'guardian-badge'
     };
 
+    // Pastikan nilai valid sebelum dibuat CV
     const rawBadgeName = badgeNameMap[badgeType] || badgeType;
-    // FIX: Pastikan string aman
+    if (!rawBadgeName) {
+        console.error("Invalid Badge Type:", badgeType);
+        return;
+    }
     const safeBadgeName = String(rawBadgeName); 
 
     try {
+      console.log(`Minting badge: ${safeBadgeName}`);
+      
       await openContractCall({
         network: STACKS_MAINNET,
         contractAddress: CONTRACT_ADDRESS,
         contractName: CONTRACT_NAME,
         functionName: 'claim-badge',
-        functionArgs: [stringAsciiCV(safeBadgeName)], // FIX: Gunakan variable yang sudah di-String()
+        functionArgs: [stringAsciiCV(safeBadgeName)], 
         postConditionMode: PostConditionMode.Allow,
         onFinish: (data) => {
           console.log(`Minting ${badgeType} sent:`, data);
@@ -177,11 +182,11 @@ function App() {
         },
       });
     } catch (e) {
-      console.error("Mint badge error:", e);
+      console.error("Mint badge error details:", e);
     }
   };
 
-  // --- 3. LOGIKA MISSION (FIXED) ---
+  // --- 3. LOGIKA MISSION ---
   const handleCompleteMission = async (taskId) => {
     if (!userData) return alert("Connect wallet first!");
     
@@ -191,11 +196,11 @@ function App() {
         return;
     }
 
-    console.log("Starting Mission:", taskId, "Reward:", task.reward);
+    // FIX: Gunakan Number() untuk memastikan tipe data integer
+    const numId = Number(taskId);
+    const numReward = Number(task.reward);
 
-    // FIX: Konversi Eksplisit ke String/Number agar uintCV tidak error
-    const safeTaskId = uintCV(taskId.toString());
-    const safeReward = uintCV(task.reward.toString());
+    console.log(`Starting Mission: ${numId} Reward: ${numReward}`);
 
     try {
       await openContractCall({
@@ -203,7 +208,7 @@ function App() {
         contractAddress: CONTRACT_ADDRESS,
         contractName: CONTRACT_NAME,
         functionName: 'complete-mission',
-        functionArgs: [safeTaskId, safeReward], // Gunakan variable yang sudah dikonversi
+        functionArgs: [uintCV(numId), uintCV(numReward)], 
         postConditionMode: PostConditionMode.Allow,
         onFinish: (data) => {
           console.log("Mission tx sent:", data);
@@ -212,7 +217,7 @@ function App() {
         },
       });
     } catch (e) {
-      console.error("Mission error:", e);
+      console.error("Mission error details:", e);
     }
   };
 

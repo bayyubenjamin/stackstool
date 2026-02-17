@@ -6,16 +6,21 @@ import { nodePolyfills } from 'vite-plugin-node-polyfills'
 export default defineConfig({
   resolve: {
     alias: {
-      // Memaksa library yang mencari 'stream' untuk menggunakan versi browser
       stream: 'stream-browserify',
-      // Memaksa buffer agar konsisten
       buffer: 'buffer',
     },
+    // FIX: Paksa penggunaan satu instance library Stacks untuk mencegah error "Invalid Clarity Value"
+    dedupe: [
+      '@stacks/transactions',
+      '@stacks/network',
+      '@stacks/common',
+      '@stacks/connect',
+      '@stacks/auth'
+    ],
   },
   plugins: [
     react(),
     nodePolyfills({
-      // Sertakan semua polyfill node
       include: ['buffer', 'stream', 'util', 'process'],
       globals: {
         Buffer: true,
