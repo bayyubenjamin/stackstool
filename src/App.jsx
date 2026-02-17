@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { AppConfig, UserSession, showConnect, openContractCall } from '@stacks/connect';
-import { STACKS_MAINNET, STACKS_TESTNET } from '@stacks/network'; // Update: Menggunakan Constant
+import { StacksMainnet } from '@stacks/network'; // FIX: Gunakan Class StacksMainnet
 import { uintCV, stringAsciiCV, PostConditionMode } from '@stacks/transactions';
 import { supabase } from './supabaseClient';
 import Layout from './components/Layout';
@@ -119,12 +119,15 @@ function App() {
     setLoading(false);
   };
 
-  // --- 1. LOGIKA CHECK-IN ---
+  // --- 1. LOGIKA CHECK-IN (genesis-core-v4: daily-check-in) ---
   const handleCheckIn = async () => {
     if (!userData) return alert("Connect wallet first!");
     
+    // FIX: Menggunakan instance StacksMainnet yang benar
+    const network = new StacksMainnet();
+
     await openContractCall({
-      network: STACKS_MAINNET,
+      network,
       contractAddress: CONTRACT_ADDRESS,
       contractName: CONTRACT_NAME,
       functionName: 'daily-check-in',
@@ -133,14 +136,19 @@ function App() {
       onFinish: (data) => {
         console.log("Check-in Transaction sent:", data);
         setHasCheckedIn(true);
+        // Optimistic update: Tambah XP manual (misal 20 XP sesuai kontrak) agar UI responsif
+        setUserXP(prev => prev + 20);
       },
     });
   };
 
-  // --- 2. LOGIKA MINT BADGE ---
+  // --- 2. LOGIKA MINT BADGE (genesis-core-v4: claim-badge) ---
   const handleMintBadge = async (badgeType) => {
     if (!userData) return alert("Connect wallet first!");
 
+    const network = new StacksMainnet();
+
+    // Mapping ID frontend ke nama badge di Smart Contract
     const badgeNameMap = {
       'genesis': 'genesis-badge',
       'node': 'node-badge',
@@ -150,11 +158,11 @@ function App() {
     const contractBadgeName = badgeNameMap[badgeType] || badgeType;
 
     await openContractCall({
-      network: STACKS_MAINNET,
+      network,
       contractAddress: CONTRACT_ADDRESS,
       contractName: CONTRACT_NAME,
       functionName: 'claim-badge',
-      functionArgs: [stringAsciiCV(contractBadgeName)],
+      functionArgs: [stringAsciiCV(contractBadgeName)], // Sesuai (string-ascii 20)
       postConditionMode: PostConditionMode.Allow,
       onFinish: (data) => {
         console.log(`Minting ${badgeType} sent:`, data);
@@ -163,26 +171,28 @@ function App() {
     });
   };
 
-  // --- 3. LOGIKA MISSION (UPDATED) ---
+  // --- 3. LOGIKA MISSION (genesis-core-v4: complete-mission) ---
   const handleCompleteMission = async (taskId) => {
     if (!userData) return alert("Connect wallet first!");
     
     const task = tasks.find(t => t.id === taskId);
     if (!task) return;
 
-    // Simulasi atau validasi pre-tx bisa ditambahkan di sini
-    // Contoh: Cek apakah user benar-benar sudah verifikasi di backend sebelum buka wallet
+    const network = new StacksMainnet();
 
     await openContractCall({
-      network: STACKS_MAINNET,
+      network,
       contractAddress: CONTRACT_ADDRESS,
       contractName: CONTRACT_NAME,
       functionName: 'complete-mission',
-      functionArgs: [uintCV(taskId), uintCV(task.reward)],
+      functionArgs: [uintCV(taskId), uintCV(task.reward)], // Sesuai (task-id uint) (reward uint)
       postConditionMode: PostConditionMode.Allow,
       onFinish: (data) => {
         console.log("Mission Transaction sent:", data);
+        // Tandai task selesai di UI
         setTasks(prev => prev.map(t => t.id === taskId ? { ...t, completed: true } : t));
+        // Optimistic update: Tambah XP user di UI
+        setUserXP(prev => prev + task.reward);
       },
     });
   };

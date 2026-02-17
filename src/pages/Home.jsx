@@ -82,8 +82,6 @@ const BadgeCard = ({
 const Home = ({ userData, userXP, userLevel, badgesStatus, handleMint, connectWallet }) => {
   
   // Definisi Badge Logic & Data
-  // isLocked: Mengecek apakah user memenuhi syarat XP/Level
-  // isMinted: Mengecek status dari smart contract (lewat props badgesStatus)
   const badges = [
     {
       id: 'genesis',
@@ -91,7 +89,7 @@ const Home = ({ userData, userXP, userLevel, badgesStatus, handleMint, connectWa
       subtitle: "Phase 1 Access",
       reqText: "Requires 100 Reputation Points. Awarded to early protocol adopters who verify their wallet.",
       icon: "💠",
-      colorClass: "stx-accent", // Pastikan class ini ada di tailwind atau ganti 'blue-500'
+      colorClass: "stx-accent", 
       isLocked: !userData || userXP < 100, 
       isMinted: badgesStatus?.genesis || false
     },
@@ -134,7 +132,7 @@ const Home = ({ userData, userXP, userLevel, badgesStatus, handleMint, connectWa
           </p>
         </div>
 
-         {/* User Personal Stats (Hanya muncul jika sudah connect) */}
+         {/* User Personal Stats */}
          {userData && (
           <>
             <div className="bg-slate-900/50 border border-stx-accent/30 p-4 rounded-xl backdrop-blur-sm relative overflow-hidden">
@@ -178,7 +176,7 @@ const Home = ({ userData, userXP, userLevel, badgesStatus, handleMint, connectWa
           <BadgeCard 
             key={badge.id}
             {...badge}
-            onMint={handleMint} // Passing fungsi handleMint ke kartu
+            onMint={handleMint} 
           />
         ))}
       </div>
