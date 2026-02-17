@@ -1,4 +1,4 @@
-import './polyfills'; // <--- TAMBAHKAN INI DI BARIS 1 (WAJIB)
+import './polyfills'; // <--- WAJIB DI BARIS 1
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import App from './App.jsx'

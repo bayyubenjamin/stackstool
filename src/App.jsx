@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { AppConfig, UserSession, showConnect, openContractCall } from '@stacks/connect';
-import { StacksMainnet } from '@stacks/network'; // FIX: Gunakan Class StacksMainnet
+import { STACKS_MAINNET } from '@stacks/network';
 import { uintCV, stringAsciiCV, PostConditionMode } from '@stacks/transactions';
 import { supabase } from './supabaseClient';
 import Layout from './components/Layout';
@@ -16,7 +16,7 @@ const CONTRACT_NAME = 'genesis-core-v4';
 const appConfig = new AppConfig(['store_write', 'publish_data']);
 const userSession = new UserSession({ appConfig });
 
-// --- DATA MISI (UPDATED: PROFESSIONAL PROTOCOL TASKS) ---
+// --- DATA MISI ---
 const MISSION_LIST = [
   { 
     id: 1, 
@@ -65,17 +65,19 @@ function App() {
         if (userSession.isUserSignedIn()) {
           const user = userSession.loadUserData(); 
           setUserData(user);
-          await fetchUserProfile(user.profile.stxAddress.mainnet);
+          fetchUserProfile(user.profile.stxAddress.mainnet);
         } else if (userSession.isSignInPending()) {
           const user = await userSession.handlePendingSignIn();
           setUserData(user);
-          await fetchUserProfile(user.profile.stxAddress.mainnet);
+          fetchUserProfile(user.profile.stxAddress.mainnet);
         }
       } catch (error) {
-        console.error("⚠️ Sesi error, reset...", error);
-        userSession.signUserOut(); 
-        setUserData(null);
-        window.location.reload(); 
+        console.error("⚠️ Session error:", error);
+        // Auto-clear cache jika corrupt
+        if (error.message && error.message.includes('JSON data version')) {
+            localStorage.removeItem('blockstack-session');
+            window.location.reload();
+        }
       }
     };
     checkSession();
@@ -83,118 +85,135 @@ function App() {
 
   // --- FUNGSI LOGIN ---
   const connectWallet = () => {
-    showConnect({
-      appDetails: { name: 'Genesis Platform', icon: window.location.origin + '/vite.svg' },
-      redirectTo: '/',
-      onFinish: () => {
-        const user = userSession.loadUserData();
-        setUserData(user);
-        fetchUserProfile(user.profile.stxAddress.mainnet);
-      },
-      userSession,
-    });
+    try {
+      showConnect({
+        appDetails: { name: 'Genesis Platform', icon: window.location.origin + '/vite.svg' },
+        redirectTo: '/',
+        onFinish: () => {
+          const user = userSession.loadUserData();
+          setUserData(user);
+          fetchUserProfile(user.profile.stxAddress.mainnet);
+        },
+        userSession,
+      });
+    } catch (err) {
+      console.error("Connect error:", err);
+    }
   };
 
   const disconnectWallet = () => {
     userSession.signUserOut();
     setUserData(null);
     setUserXP(0);
-    setTasks(MISSION_LIST); // Reset tampilan task
+    setUserLevel(1);
+    setTasks(MISSION_LIST);
   };
 
   const fetchUserProfile = async (walletAddress) => {
-    setLoading(true);
     try {
       let { data: user } = await supabase.from('users').select('*').eq('wallet_address', walletAddress).single();
       if (user) {
         setUserXP(user.xp || 0);
         setUserLevel(user.level || 1);
         if (user.last_checkin) {
-          setHasCheckedIn(new Date(user.last_checkin).toDateString() === new Date().toDateString());
+          const lastCheck = new Date(user.last_checkin).toDateString();
+          const today = new Date().toDateString();
+          setHasCheckedIn(lastCheck === today);
         }
       }
     } catch (error) {
       console.error("Error fetching profile:", error);
     }
-    setLoading(false);
   };
 
-  // --- 1. LOGIKA CHECK-IN (genesis-core-v4: daily-check-in) ---
+  // --- 1. LOGIKA CHECK-IN ---
   const handleCheckIn = async () => {
     if (!userData) return alert("Connect wallet first!");
     
-    // FIX: Menggunakan instance StacksMainnet yang benar
-    const network = new StacksMainnet();
-
-    await openContractCall({
-      network,
-      contractAddress: CONTRACT_ADDRESS,
-      contractName: CONTRACT_NAME,
-      functionName: 'daily-check-in',
-      functionArgs: [],
-      postConditionMode: PostConditionMode.Allow,
-      onFinish: (data) => {
-        console.log("Check-in Transaction sent:", data);
-        setHasCheckedIn(true);
-        // Optimistic update: Tambah XP manual (misal 20 XP sesuai kontrak) agar UI responsif
-        setUserXP(prev => prev + 20);
-      },
-    });
+    try {
+      await openContractCall({
+        network: STACKS_MAINNET,
+        contractAddress: CONTRACT_ADDRESS,
+        contractName: CONTRACT_NAME,
+        functionName: 'daily-check-in',
+        functionArgs: [],
+        postConditionMode: PostConditionMode.Allow,
+        onFinish: (data) => {
+          console.log("Check-in tx sent:", data);
+          setHasCheckedIn(true);
+          setUserXP(prev => prev + 20);
+        },
+      });
+    } catch (e) {
+      console.error("Check-in error:", e);
+    }
   };
 
-  // --- 2. LOGIKA MINT BADGE (genesis-core-v4: claim-badge) ---
+  // --- 2. LOGIKA MINT BADGE ---
   const handleMintBadge = async (badgeType) => {
     if (!userData) return alert("Connect wallet first!");
 
-    const network = new StacksMainnet();
-
-    // Mapping ID frontend ke nama badge di Smart Contract
     const badgeNameMap = {
       'genesis': 'genesis-badge',
       'node': 'node-badge',
       'guardian': 'guardian-badge'
     };
 
-    const contractBadgeName = badgeNameMap[badgeType] || badgeType;
+    const rawBadgeName = badgeNameMap[badgeType] || badgeType;
+    // FIX: Pastikan string aman
+    const safeBadgeName = String(rawBadgeName); 
 
-    await openContractCall({
-      network,
-      contractAddress: CONTRACT_ADDRESS,
-      contractName: CONTRACT_NAME,
-      functionName: 'claim-badge',
-      functionArgs: [stringAsciiCV(contractBadgeName)], // Sesuai (string-ascii 20)
-      postConditionMode: PostConditionMode.Allow,
-      onFinish: (data) => {
-        console.log(`Minting ${badgeType} sent:`, data);
-        setBadgesStatus(prev => ({ ...prev, [badgeType]: true }));
-      },
-    });
+    try {
+      await openContractCall({
+        network: STACKS_MAINNET,
+        contractAddress: CONTRACT_ADDRESS,
+        contractName: CONTRACT_NAME,
+        functionName: 'claim-badge',
+        functionArgs: [stringAsciiCV(safeBadgeName)], // FIX: Gunakan variable yang sudah di-String()
+        postConditionMode: PostConditionMode.Allow,
+        onFinish: (data) => {
+          console.log(`Minting ${badgeType} sent:`, data);
+          setBadgesStatus(prev => ({ ...prev, [badgeType]: true }));
+        },
+      });
+    } catch (e) {
+      console.error("Mint badge error:", e);
+    }
   };
 
-  // --- 3. LOGIKA MISSION (genesis-core-v4: complete-mission) ---
+  // --- 3. LOGIKA MISSION (FIXED) ---
   const handleCompleteMission = async (taskId) => {
     if (!userData) return alert("Connect wallet first!");
     
     const task = tasks.find(t => t.id === taskId);
-    if (!task) return;
+    if (!task) {
+        console.error("Task not found!");
+        return;
+    }
 
-    const network = new StacksMainnet();
+    console.log("Starting Mission:", taskId, "Reward:", task.reward);
 
-    await openContractCall({
-      network,
-      contractAddress: CONTRACT_ADDRESS,
-      contractName: CONTRACT_NAME,
-      functionName: 'complete-mission',
-      functionArgs: [uintCV(taskId), uintCV(task.reward)], // Sesuai (task-id uint) (reward uint)
-      postConditionMode: PostConditionMode.Allow,
-      onFinish: (data) => {
-        console.log("Mission Transaction sent:", data);
-        // Tandai task selesai di UI
-        setTasks(prev => prev.map(t => t.id === taskId ? { ...t, completed: true } : t));
-        // Optimistic update: Tambah XP user di UI
-        setUserXP(prev => prev + task.reward);
-      },
-    });
+    // FIX: Konversi Eksplisit ke String/Number agar uintCV tidak error
+    const safeTaskId = uintCV(taskId.toString());
+    const safeReward = uintCV(task.reward.toString());
+
+    try {
+      await openContractCall({
+        network: STACKS_MAINNET,
+        contractAddress: CONTRACT_ADDRESS,
+        contractName: CONTRACT_NAME,
+        functionName: 'complete-mission',
+        functionArgs: [safeTaskId, safeReward], // Gunakan variable yang sudah dikonversi
+        postConditionMode: PostConditionMode.Allow,
+        onFinish: (data) => {
+          console.log("Mission tx sent:", data);
+          setTasks(prev => prev.map(t => t.id === taskId ? { ...t, completed: true } : t));
+          setUserXP(prev => prev + task.reward);
+        },
+      });
+    } catch (e) {
+      console.error("Mission error:", e);
+    }
   };
 
   return (
@@ -213,7 +232,7 @@ function App() {
           onClick={disconnectWallet} 
           className="bg-slate-800 px-4 py-2 rounded-lg font-mono text-xs hover:bg-slate-700 transition-colors"
         >
-          {userData.profile.stxAddress.mainnet.slice(0,5)}...
+          {userData.profile.stxAddress.mainnet.slice(0,5)}...{userData.profile.stxAddress.mainnet.slice(-5)}
         </button>
       }
     >
