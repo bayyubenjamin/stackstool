@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { AppConfig, UserSession, showConnect, openContractCall } from '@stacks/connect';
-import { STACKS_MAINNET } from '@stacks/network';
+import { StacksMainnet } from '@stacks/network'; // FIX: Syntax v6
 import { uintCV, stringAsciiCV, PostConditionMode } from '@stacks/transactions';
 import { supabase } from './supabaseClient';
 import Layout from './components/Layout';
@@ -131,7 +131,7 @@ function App() {
     
     try {
       await openContractCall({
-        network: STACKS_MAINNET,
+        network: new StacksMainnet(), // FIX: Gunakan class v6
         contractAddress: CONTRACT_ADDRESS,
         contractName: CONTRACT_NAME,
         functionName: 'daily-check-in',
@@ -158,7 +158,6 @@ function App() {
       'guardian': 'guardian-badge'
     };
 
-    // Pastikan nilai valid sebelum dibuat CV
     const rawBadgeName = badgeNameMap[badgeType] || badgeType;
     if (!rawBadgeName) {
         console.error("Invalid Badge Type:", badgeType);
@@ -170,7 +169,7 @@ function App() {
       console.log(`Minting badge: ${safeBadgeName}`);
       
       await openContractCall({
-        network: STACKS_MAINNET,
+        network: new StacksMainnet(), // FIX: Gunakan class v6
         contractAddress: CONTRACT_ADDRESS,
         contractName: CONTRACT_NAME,
         functionName: 'claim-badge',
@@ -196,7 +195,6 @@ function App() {
         return;
     }
 
-    // FIX: Gunakan Number() untuk memastikan tipe data integer
     const numId = Number(taskId);
     const numReward = Number(task.reward);
 
@@ -204,7 +202,7 @@ function App() {
 
     try {
       await openContractCall({
-        network: STACKS_MAINNET,
+        network: new StacksMainnet(), // FIX: Gunakan class v6
         contractAddress: CONTRACT_ADDRESS,
         contractName: CONTRACT_NAME,
         functionName: 'complete-mission',
