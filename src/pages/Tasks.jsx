@@ -3,10 +3,10 @@ import { callReadOnlyFunction, standardPrincipalCV, uintCV, cvToValue } from '@s
 import { StacksMainnet } from '@stacks/network';
 import { userSession } from '../supabaseClient'; 
 
-// --- CONFIGURATION V5 ---
+// --- CONFIGURATION V10 ---
 const CONTRACT_ADDRESS = 'SP3GHKMV4GSYNA8WGBX83DACG80K1RRVQZAZMB9J3'; 
-const CONTRACT_NAME = 'genesis-missions-v5'; 
-const CHECK_FUNCTION_NAME = 'is-task-done'; // DISESUAIKAN DENGAN V5
+const CONTRACT_NAME = 'genesis-missions-v10'; // DISESUAIKAN DENGAN V10
+const CHECK_FUNCTION_NAME = 'is-task-done'; 
 
 const Tasks = ({ initialTasks, handleTask }) => {
   const [tasks, setTasks] = useState(initialTasks || []);
@@ -76,7 +76,7 @@ const Tasks = ({ initialTasks, handleTask }) => {
     <div className="space-y-6 relative">
       {loadingTasks && (
           <div className="absolute -top-10 right-0 flex items-center text-xs text-indigo-400 animate-pulse">
-              Syncing with blockchain...
+              Syncing with v10 blockchain...
           </div>
       )}
 

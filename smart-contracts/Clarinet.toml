@@ -5,14 +5,25 @@ authors = []
 telemetry = true
 cache_dir = "./.cache"
 requirements = [
-    { contract_id = "SP3FBR2AGK5H9QBDH3EEN6DF8EK8JY7RX8QJ5SVTE.sip-010-trait-ft-standard" }
+    { contract_id = "SP3FBR2AGK5H9QBDH3EEN6DF8EK8JY7RX8QJ5SVTE.sip-010-trait-ft-standard" },
+    { contract_id = "SP2PABAF9FTAJYNFZH93XENAJ8FVY99RRM50D2JG9.nft-trait" }
 ]
 
 [project.cache_location]
 path = ".requirements"
 
-# HANYA SISAKAN INI
-[contracts.genesis-core-v6]
-path = "contracts/genesis-core-v6.clar"
+[contracts.genesis-badges-v10]
+path = "contracts/genesis-badges-v10.clar"
 clarity_version = 2
 epoch = 2.5
+
+[contracts.genesis-missions-v10]
+path = "contracts/genesis-missions-v10.clar"
+clarity_version = 2
+epoch = 2.5
+
+[contracts.genesis-core-v10]
+path = "contracts/genesis-core-v10.clar"
+clarity_version = 2
+epoch = 2.5
+depends_on = ["genesis-badges-v10", "genesis-missions-v10"]

@@ -9,10 +9,24 @@ plan:
     - id: 0
       transactions:
         - contract-publish:
-            contract-name: genesis-core-v6
+            contract-name: genesis-badges-v10
             expected-sender: SP3GHKMV4GSYNA8WGBX83DACG80K1RRVQZAZMB9J3
-            cost: 35840
-            path: contracts/genesis-core-v6.clar
+            cost: 16570
+            path: contracts/genesis-badges-v10.clar
+            anchor-block-only: true
+            clarity-version: 2
+        - contract-publish:
+            contract-name: genesis-missions-v10
+            expected-sender: SP3GHKMV4GSYNA8WGBX83DACG80K1RRVQZAZMB9J3
+            cost: 16690
+            path: contracts/genesis-missions-v10.clar
+            anchor-block-only: true
+            clarity-version: 2
+        - contract-publish:
+            contract-name: genesis-core-v10
+            expected-sender: SP3GHKMV4GSYNA8WGBX83DACG80K1RRVQZAZMB9J3
+            cost: 31410
+            path: contracts/genesis-core-v10.clar
             anchor-block-only: true
             clarity-version: 2
       epoch: "2.5"
