@@ -9,38 +9,17 @@ plan:
     - id: 0
       transactions:
         - contract-publish:
-            contract-name: token-poin
+            contract-name: genesis-missions-v5
             expected-sender: SP3GHKMV4GSYNA8WGBX83DACG80K1RRVQZAZMB9J3
-            cost: 19580
-            path: contracts/token-poin.clar
+            cost: 21150
+            path: contracts/genesis-missions-v5.clar
             anchor-block-only: true
             clarity-version: 2
         - contract-publish:
-            contract-name: faucet-distributor
+            contract-name: genesis-core-v5
             expected-sender: SP3GHKMV4GSYNA8WGBX83DACG80K1RRVQZAZMB9J3
-            cost: 14030
-            path: contracts/faucet-distributor.clar
-            anchor-block-only: true
-            clarity-version: 2
-        - contract-publish:
-            contract-name: token-one
-            expected-sender: SP3GHKMV4GSYNA8WGBX83DACG80K1RRVQZAZMB9J3
-            cost: 15040
-            path: contracts/token-one.clar
-            anchor-block-only: true
-            clarity-version: 2
-        - contract-publish:
-            contract-name: staking-refinery
-            expected-sender: SP3GHKMV4GSYNA8WGBX83DACG80K1RRVQZAZMB9J3
-            cost: 21290
-            path: contracts/staking-refinery.clar
-            anchor-block-only: true
-            clarity-version: 2
-        - contract-publish:
-            contract-name: utility-gacha
-            expected-sender: SP3GHKMV4GSYNA8WGBX83DACG80K1RRVQZAZMB9J3
-            cost: 9400
-            path: contracts/utility-gacha.clar
+            cost: 35410
+            path: contracts/genesis-core-v5.clar
             anchor-block-only: true
             clarity-version: 2
       epoch: "2.5"

@@ -11,32 +11,14 @@ requirements = [
 [project.cache_location]
 path = ".requirements"
 
-# --- HANYA ADA 5 KONTRAK INI ---
-
-[contracts.token-poin]
-path = "contracts/token-poin.clar"
+# KITA SISAKAN CUMA V5 BIAR CLARINET NGGAK BACA KONTRAK LAMA
+[contracts.genesis-missions-v5]
+path = "contracts/genesis-missions-v5.clar"
 clarity_version = 2
 epoch = 2.5
 
-[contracts.token-one]
-path = "contracts/token-one.clar"
+[contracts.genesis-core-v5]
+path = "contracts/genesis-core-v5.clar"
 clarity_version = 2
 epoch = 2.5
-
-[contracts.faucet-distributor]
-path = "contracts/faucet-distributor.clar"
-clarity_version = 2
-epoch = 2.5
-depends_on = ["token-poin"]
-
-[contracts.staking-refinery]
-path = "contracts/staking-refinery.clar"
-clarity_version = 2
-epoch = 2.5
-depends_on = ["token-poin", "token-one"]
-
-[contracts.utility-gacha]
-path = "contracts/utility-gacha.clar"
-clarity_version = 2
-epoch = 2.5
-depends_on = ["token-poin", "token-one"]
+depends_on = ["genesis-missions-v5"]

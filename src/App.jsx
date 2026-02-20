@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { showConnect, openContractCall } from '@stacks/connect'; // Hapus AppConfig & UserSession dari sini
+import { showConnect, openContractCall } from '@stacks/connect'; 
 import { StacksMainnet } from '@stacks/network';
 import { uintCV, stringAsciiCV, PostConditionMode } from '@stacks/transactions';
-// Import userSession dari file yang baru kita edit
 import { supabase, userSession } from './supabaseClient'; 
 import Layout from './components/Layout';
 import Home from './pages/Home';
@@ -12,9 +11,9 @@ import Vault from './pages/Vault';
 
 // --- KONFIGURASI SMART CONTRACT ---
 const CONTRACT_ADDRESS = 'SP3GHKMV4GSYNA8WGBX83DACG80K1RRVQZAZMB9J3'; 
-const CONTRACT_NAME = 'genesis-core-v4';
-
-// (Hapus baris appConfig dan userSession = new UserSession... yang lama disini)
+// PENTING: Pastikan CONTRACT_NAME ini sama persis dengan nama contract yang lu deploy
+// Jika di Stacks Explorer namanya genesis-missions-v4, ubah menjadi 'genesis-missions-v4'
+const CONTRACT_NAME = 'genesis-core-v5'; 
 
 const MISSION_LIST = [
   { 
@@ -53,9 +52,6 @@ function App() {
   const [userLevel, setUserLevel] = useState(1);
   const [hasCheckedIn, setHasCheckedIn] = useState(false);
   const [badgesStatus, setBadgesStatus] = useState({ genesis: false, node: false, guardian: false });
-  
-  // State Tasks
-  const [tasks, setTasks] = useState(MISSION_LIST);
 
   // --- HANDLING SESI ---
   useEffect(() => {
@@ -92,7 +88,7 @@ function App() {
           setUserData(user);
           fetchUserProfile(user.profile.stxAddress.mainnet);
         },
-        userSession, // Ini sekarang mengambil dari import, bukan variabel lokal
+        userSession, 
       });
     } catch (err) {
       console.error("Connect error:", err);
@@ -104,7 +100,6 @@ function App() {
     setUserData(null);
     setUserXP(0);
     setUserLevel(1);
-    setTasks(MISSION_LIST);
   };
 
   const fetchUserProfile = async (walletAddress) => {
@@ -186,12 +181,15 @@ function App() {
 
   // --- 3. LOGIKA MISSION ---
   const handleCompleteMission = async (taskId) => {
-    if (!userData) return alert("Connect wallet first!");
+    if (!userData) {
+      alert("Connect wallet first!");
+      return false; // Return false agar Tasks.jsx tahu proses batal
+    }
     
-    const task = tasks.find(t => t.id === taskId);
+    const task = MISSION_LIST.find(t => t.id === taskId);
     if (!task) {
         console.error("Task not found!");
-        return;
+        return false;
     }
 
     const numId = Number(taskId);
@@ -199,8 +197,9 @@ function App() {
 
     console.log(`Starting Mission: ${numId} Reward: ${numReward}`);
 
-    try {
-      await openContractCall({
+    // Return Promise agar sinkron dengan (await handleTask) di Tasks.jsx
+    return new Promise((resolve) => {
+      openContractCall({
         network: new StacksMainnet(), 
         contractAddress: CONTRACT_ADDRESS,
         contractName: CONTRACT_NAME,
@@ -209,13 +208,15 @@ function App() {
         postConditionMode: PostConditionMode.Allow,
         onFinish: (data) => {
           console.log("Mission tx sent:", data);
-          setTasks(prev => prev.map(t => t.id === taskId ? { ...t, completed: true } : t));
           setUserXP(prev => prev + task.reward);
+          resolve(true); // Kirim sinyal sukses ke Tasks.jsx
         },
+        onCancel: () => {
+          console.log("Mission tx cancelled.");
+          resolve(false); // Kirim sinyal batal ke Tasks.jsx
+        }
       });
-    } catch (e) {
-      console.error("Mission error details:", e);
-    }
+    });
   };
 
   return (
@@ -258,7 +259,7 @@ function App() {
           
           {activeTab === 'tasks' && (
             <Tasks 
-              tasks={tasks} 
+              initialTasks={MISSION_LIST} // Pakai initialTasks agar di-manage oleh komponen Tasks.jsx
               handleTask={handleCompleteMission} 
             />
           )}
