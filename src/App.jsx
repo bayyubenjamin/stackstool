@@ -80,7 +80,7 @@ function App() {
   const handleMintBadge = async (badgeType) => {
     if (!userData) return alert("Connect wallet first!");
 
-    // DISESUAIKAN: Nama badge di sini harus sama dengan yang kamu buat di 'create-badge'
+    // DISESUAIKAN: Nama di sini harus SAMA PERSIS dengan yang diisi di create-badge (Explorer)
     const badgeNameMap = {
       'genesis': 'genesis',
       'node': 'node',
